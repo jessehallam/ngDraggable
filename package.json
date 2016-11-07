@@ -8,7 +8,7 @@
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/fatlinesofcode/ngDraggable.git"
+    "url": "git+https://github.com/jessehallam/ngDraggable.git"
   },
   "author": "philip andrews",
   "license": "MIT",
