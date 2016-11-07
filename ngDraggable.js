@@ -53,6 +53,10 @@ angular.module("ngDraggable", [])
                 // deregistration function for mouse move events in $rootScope triggered by jqLite trigger handler
                 var _deregisterRootMoveListener = angular.noop;
 
+                function getDragType() {
+                    return attrs.ngDragType || (typeof (data));
+                }
+
                 var initialize = function () {
                     element.attr('draggable', 'false'); // prevent native drag
                     // check to see if drag handle(s) was specified
@@ -191,8 +195,7 @@ angular.module("ngDraggable", [])
                         _data = getDragData(scope);
                         element.addClass('dragging');
                         /* jhallam begin */
-                        var dataType = attrs.ngDragType || ((_data === null || _data === void (0)) ? null : typeof _data);
-                        $rootScope.$broadcast('draggable:start', { x: _mx, y: _my, tx: _tx, ty: _ty, event: evt, element: element, data: _data, dataType: dataType });
+                        $rootScope.$broadcast('draggable:start', {'$eventType': '$start', x: _mx, y: _my, tx: _tx, ty: _ty, event: evt, element: element, data: _data, dataType: getDragType() });
                         /* jhallam end */
 
                         if (onDragStartCallback) {
@@ -215,14 +218,14 @@ angular.module("ngDraggable", [])
 
                     moveElement(_tx, _ty);
 
-                    $rootScope.$broadcast('draggable:move', { x: _mx, y: _my, tx: _tx, ty: _ty, event: evt, element: element, data: _data, uid: _myid, dragOffset: _dragOffset });
+                    $rootScope.$broadcast('draggable:move', {'$eventType' : '$move', x: _mx, y: _my, tx: _tx, ty: _ty, event: evt, element: element, data: _data, uid: _myid, dragOffset: _dragOffset, dataType: getDragType() });
                 };
 
                 var onrelease = function (evt) {
                     if (!_dragEnabled)
                         return;
                     evt.preventDefault();
-                    $rootScope.$broadcast('draggable:end', { x: _mx, y: _my, tx: _tx, ty: _ty, event: evt, element: element, data: _data, callback: onDragComplete, uid: _myid });
+                    $rootScope.$broadcast('draggable:end', {'$eventType' : '$end', x: _mx, y: _my, tx: _tx, ty: _ty, event: evt, element: element, data: _data, callback: onDragComplete, uid: _myid, dataType: getDragType() });
                     element.removeClass('dragging');
                     element.parent().find('.drag-enter').removeClass('drag-enter');
                     reset();
