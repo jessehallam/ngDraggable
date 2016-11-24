@@ -53,10 +53,6 @@ angular.module("ngDraggable", [])
                 // deregistration function for mouse move events in $rootScope triggered by jqLite trigger handler
                 var _deregisterRootMoveListener = angular.noop;
 
-                function getDragType() {
-                    return attrs.ngDragType || (typeof (data));
-                }
-
                 var initialize = function () {
                     element.attr('draggable', 'false'); // prevent native drag
                     // check to see if drag handle(s) was specified
@@ -143,6 +139,12 @@ angular.module("ngDraggable", [])
 
                 };
 
+                var getDragType = function () {
+                    if (attrs.ngDragType) {
+                        return $parse(attrs.ngDragType)(scope);
+                    }
+                };
+
                 var cancelPress = function () {
                     clearTimeout(_pressTimer);
                     $document.off(_moveEvents, cancelPress);
@@ -194,10 +196,9 @@ angular.module("ngDraggable", [])
                     if (!element.hasClass('dragging')) {
                         _data = getDragData(scope);
                         element.addClass('dragging');
-                        /* jhallam begin */
-                        $rootScope.$broadcast('draggable:start', {'$eventType': '$start', x: _mx, y: _my, tx: _tx, ty: _ty, event: evt, element: element, data: _data, dataType: getDragType() });
-                        /* jhallam end */
 
+                        $rootScope.$broadcast('draggable:start', { x: _mx, y: _my, tx: _tx, ty: _ty, event: evt, element: element, data: _data, dragType: getDragType() });
+                       
                         if (onDragStartCallback) {
                             scope.$apply(function () {
                                 onDragStartCallback(scope, { $data: _data, $event: evt });
@@ -218,14 +219,14 @@ angular.module("ngDraggable", [])
 
                     moveElement(_tx, _ty);
 
-                    $rootScope.$broadcast('draggable:move', {'$eventType' : '$move', x: _mx, y: _my, tx: _tx, ty: _ty, event: evt, element: element, data: _data, uid: _myid, dragOffset: _dragOffset, dataType: getDragType() });
+                    $rootScope.$broadcast('draggable:move', { x: _mx, y: _my, tx: _tx, ty: _ty, event: evt, element: element, data: _data, uid: _myid, dragOffset: _dragOffset, dragType: getDragType() });
                 };
 
                 var onrelease = function (evt) {
                     if (!_dragEnabled)
                         return;
                     evt.preventDefault();
-                    $rootScope.$broadcast('draggable:end', {'$eventType' : '$end', x: _mx, y: _my, tx: _tx, ty: _ty, event: evt, element: element, data: _data, callback: onDragComplete, uid: _myid, dataType: getDragType() });
+                    $rootScope.$broadcast('draggable:end', { x: _mx, y: _my, tx: _tx, ty: _ty, event: evt, element: element, data: _data, callback: onDragComplete, uid: _myid, dragType: getDragType() });
                     element.removeClass('dragging');
                     element.parent().find('.drag-enter').removeClass('drag-enter');
                     reset();
@@ -310,6 +311,26 @@ angular.module("ngDraggable", [])
                     scope.$on('draggable:end', onDragEnd);
                 };
 
+                var isDropEnabled = function (obj) {
+                    function isDropEnabledInternal() {
+                        if (!_dropEnabled) return false;
+                        if (obj.dragType) {
+                            if (!attrs.ngDropType) return false;
+                            var dropType = $parse(attrs.ngDropType)(scope);
+                            if (dropType === null || dropType === undefined) return false;
+                            if (dropType.constructor === Array) {
+                                return dropType.indexOf(obj.dragType) >= 0 ||
+                                    dropType.indexOf('*') >= 0;
+                            }
+                            return dropType === obj.dragType || dropType === '*';
+                        }
+                        return true;
+                    }
+
+                    var value = isDropEnabledInternal();
+                    return value;
+                };
+
                 var onDestroy = function (enable) {
                     toggleListeners(false);
                 };
@@ -317,8 +338,8 @@ angular.module("ngDraggable", [])
                     _dropEnabled = newVal;
                 };
                 var onDragStart = function (evt, obj) {
-                    if (!_dropEnabled) return;
-                    if (attrs.ngDropType && attrs.ngDropType !== obj.dataType) return;
+                    //if (!_dropEnabled) return;
+                    if (!isDropEnabled(obj)) return;
                     isTouching(obj.x, obj.y, obj.element);
 
                     if (attrs.ngDragStart) {
@@ -328,8 +349,8 @@ angular.module("ngDraggable", [])
                     }
                 };
                 var onDragMove = function (evt, obj) {
-                    if (!_dropEnabled) return;
-                    if (attrs.ngDropType && attrs.ngDropType !== obj.dataType) return;
+                    //if (!_dropEnabled) return;
+                    if (!isDropEnabled(obj)) return;
                     isTouching(obj.x, obj.y, obj.element);
 
                     if (attrs.ngDragMove) {
@@ -342,7 +363,7 @@ angular.module("ngDraggable", [])
                 var onDragEnd = function (evt, obj) {
                     // don't listen to drop events if this is the element being dragged
                     // only update the styles and return
-                    if (attrs.ngDropType && attrs.ngDropType !== obj.dataType) return;
+                    if (!isDropEnabled(obj)) return;
                     if (!_dropEnabled || _myid === obj.uid) {
                         updateDragStyles(false, obj.element);
                         return;
@@ -446,6 +467,7 @@ angular.module("ngDraggable", [])
                     if (_allowClone) {
                         scope.$apply(function () {
                             scope.clonedData = obj.data;
+                            console.log('Applying cloned data:', obj.data);
                         });
                         element.css('width', obj.element[0].offsetWidth);
                         element.css('height', obj.element[0].offsetHeight);
