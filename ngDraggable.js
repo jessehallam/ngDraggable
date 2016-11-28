@@ -198,7 +198,7 @@ angular.module("ngDraggable", [])
                         element.addClass('dragging');
 
                         $rootScope.$broadcast('draggable:start', { x: _mx, y: _my, tx: _tx, ty: _ty, event: evt, element: element, data: _data, dragType: getDragType() });
-                       
+
                         if (onDragStartCallback) {
                             scope.$apply(function () {
                                 onDragStartCallback(scope, { $data: _data, $event: evt });
@@ -431,7 +431,24 @@ angular.module("ngDraggable", [])
             link: function (scope, element, attrs) {
                 var img, _allowClone = true;
                 var _dragOffset = null;
+                var _type = null;
                 scope.clonedData = {};
+
+                scope.$watch(attrs.ngDragClone, function (options) {
+                    _type = options;
+                }, true);
+
+                function isValidDragType(dragType) {
+                    if (dragType) {
+                        if (!_type) return false;
+                        if (_type === '*' || _type === dragType) return true;
+                        if (_type.constructor === Array) {
+                            return _type.indexOf('*') >= 0 || _type.indexOf(dragType) >= 0;
+                        }
+                    }
+                    return !_type;
+                }
+
                 var initialize = function () {
 
                     img = element.find('img');
@@ -464,10 +481,13 @@ angular.module("ngDraggable", [])
                     if (angular.isDefined(obj.data.allowClone)) {
                         _allowClone = obj.data.allowClone;
                     }
+                    if (_allowClone && !isValidDragType(obj.dragType)) {
+                        _allowClone = false;
+                    }
                     if (_allowClone) {
+                        console.log('Creating clone. Event=', event, 'Obj=', obj, 'Element=', elm);
                         scope.$apply(function () {
                             scope.clonedData = obj.data;
-                            console.log('Applying cloned data:', obj.data);
                         });
                         element.css('width', obj.element[0].offsetWidth);
                         element.css('height', obj.element[0].offsetHeight);
