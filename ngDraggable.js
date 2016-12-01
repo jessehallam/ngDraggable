@@ -21,7 +21,8 @@ angular.module("ngDraggable", [])
         scope.touchTimeout = 100;
 
     }])
-    .directive('ngDrag', ['$rootScope', '$parse', '$document', '$window', 'ngDraggable', function ($rootScope, $parse, $document, $window, ngDraggable) {
+    .constant('DragPointerSensitivity', 5)
+    .directive('ngDrag', ['DragPointerSensitivity', '$rootScope', '$parse', '$document', '$window', 'ngDraggable', function (DragPointerSensitivity, $rootScope, $parse, $document, $window, ngDraggable) {
         return {
             restrict: 'A',
             link: function (scope, element, attrs) {
@@ -189,11 +190,25 @@ angular.module("ngDraggable", [])
                     });
                 };
 
+                var computeDist = function (evt) {
+                    var a = evt.pageX - _mx;
+                    var b = evt.pageY - _my;
+                    return Math.sqrt(a * a + b * b);
+                };
+
                 var onmove = function (evt) {
                     if (!_dragEnabled) return;
                     evt.preventDefault();
 
                     if (!element.hasClass('dragging')) {
+                        if (evt.clientX === _mx && evt.clientY === _my) {
+                            return;
+                        }
+                        if (computeDist(evt) < DragPointerSensitivity) {
+                            return;
+                        }
+
+                        console.log('starting dragging', arguments);
                         _data = getDragData(scope);
                         element.addClass('dragging');
 
