@@ -241,6 +241,7 @@ angular.module("ngDraggable", [])
                     if (!_dragEnabled)
                         return;
                     evt.preventDefault();
+                    evt.stopPropagation();
                     $rootScope.$broadcast('draggable:end', { x: _mx, y: _my, tx: _tx, ty: _ty, event: evt, element: element, data: _data, callback: onDragComplete, uid: _myid, dragType: getDragType() });
                     element.removeClass('dragging');
                     element.parent().find('.drag-enter').removeClass('drag-enter');
@@ -304,6 +305,7 @@ angular.module("ngDraggable", [])
 
                 var _dropEnabled = false;
 
+                var dropType;
                 var onDropCallback = $parse(attrs.ngDropSuccess);// || function(){};
 
                 var onDragStartCallback = $parse(attrs.ngDragStart);
@@ -320,31 +322,23 @@ angular.module("ngDraggable", [])
                     if (!enable) return;
                     // add listeners.
                     scope.$watch(attrs.ngDrop, onEnableChange);
+                    scope.$watch(attrs.ngDropType, function (value) { dropType = value; });
                     scope.$on('$destroy', onDestroy);
                     scope.$on('draggable:start', onDragStart);
                     scope.$on('draggable:move', onDragMove);
                     scope.$on('draggable:end', onDragEnd);
                 };
 
-                var isDropEnabled = function (obj) {
-                    function isDropEnabledInternal() {
-                        if (!_dropEnabled) return false;
-                        if (obj.dragType) {
-                            if (!attrs.ngDropType) return false;
-                            var dropType = $parse(attrs.ngDropType)(scope);
-                            if (dropType === null || dropType === undefined) return false;
-                            if (dropType.constructor === Array) {
-                                return dropType.indexOf(obj.dragType) >= 0 ||
-                                    dropType.indexOf('*') >= 0;
-                            }
-                            return dropType === obj.dragType || dropType === '*';
+                function isDropEnabled(event) {
+                    if (event.dragType || dropType) {
+                        if (!event.dragType || !dropType) return false;
+                        if (dropType.constructor === Array) {
+                            return dropType.indexOf(event.dragType) >= 0;
                         }
-                        return true;
+                        return dropType === event.dragType;
                     }
-
-                    var value = isDropEnabledInternal();
-                    return value;
-                };
+                    return false;
+                }
 
                 var onDestroy = function (enable) {
                     toggleListeners(false);
@@ -355,7 +349,7 @@ angular.module("ngDraggable", [])
                 var onDragStart = function (evt, obj) {
                     //if (!_dropEnabled) return;
                     if (!isDropEnabled(obj)) return;
-                    isTouching(obj.x, obj.y, obj.element);
+                    isTouching(obj);
 
                     if (attrs.ngDragStart) {
                         $timeout(function () {
@@ -366,7 +360,7 @@ angular.module("ngDraggable", [])
                 var onDragMove = function (evt, obj) {
                     //if (!_dropEnabled) return;
                     if (!isDropEnabled(obj)) return;
-                    isTouching(obj.x, obj.y, obj.element);
+                    isTouching(obj);
 
                     if (attrs.ngDragMove) {
                         $timeout(function () {
@@ -380,10 +374,10 @@ angular.module("ngDraggable", [])
                     // only update the styles and return
                     if (!isDropEnabled(obj)) return;
                     if (!_dropEnabled || _myid === obj.uid) {
-                        updateDragStyles(false, obj.element);
+                        updateDragStyles(false, obj);
                         return;
                     }
-                    if (isTouching(obj.x, obj.y, obj.element)) {
+                    if (isTouching(obj)) {
                         // call the ngDraggable ngDragSuccess element callback
                         if (obj.callback) {
                             obj.callback(obj);
@@ -402,27 +396,35 @@ angular.module("ngDraggable", [])
                         });
                     }
 
-                    updateDragStyles(false, obj.element);
+                    updateDragStyles(false, obj);
                 };
 
-                var isTouching = function (mouseX, mouseY, dragElement) {
+                var isTouching = function (eventObj) {
+                    var mouseX = eventObj.x;
+                    var mouseY = eventObj.y;
+                    var dragElement = eventObj.element;
+
                     var touching = hitTest(mouseX, mouseY);
                     scope.isTouching = touching;
                     if (touching) {
                         _lastDropTouch = element;
                     }
-                    updateDragStyles(touching, dragElement);
+                    updateDragStyles(touching, eventObj);
                     return touching;
                 };
 
-                var updateDragStyles = function (touching, dragElement) {
+                var updateDragStyles = function (touching, eventObj) {
+                    var dragElement = eventObj.element;
+                    var dragTypeClassName = 'drag-type-' + eventObj.dragType.replace(/[^a-zA-Z0-9]/g, '_');
                     if (touching) {
                         element.addClass('drag-enter');
                         dragElement.addClass('drag-over');
+                        element.addClass(dragTypeClassName);
                     } else if (_lastDropTouch == element) {
                         _lastDropTouch = null;
                         element.removeClass('drag-enter');
                         dragElement.removeClass('drag-over');
+                        element.removeClass(dragTypeClassName);
                     }
                 };
 
