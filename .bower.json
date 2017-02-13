@@ -1,0 +1,25 @@
+{
+  "name": "ngDraggable-jhallam",
+  "main": "ngDraggable.js",
+  "version": "0.1.12",
+  "homepage": "https://github.com/fatlinesofcode/ngDraggable",
+  "ignore": [
+    "**/.*",
+    "node_modules",
+    "bower_components",
+    "test",
+    "tests"
+  ],
+  "dependencies": {
+    "angular": "latest"
+  },
+  "_release": "0.1.12",
+  "_resolution": {
+    "type": "version",
+    "tag": "0.1.12",
+    "commit": "36318e00d0f43b81105bd576f4e11c7d4b1ae270"
+  },
+  "_source": "https://github.com/jessehallam/ngDraggable.git",
+  "_target": "*",
+  "_originalSource": "https://github.com/jessehallam/ngDraggable.git"
+}
