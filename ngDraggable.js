@@ -21,7 +21,7 @@ angular.module("ngDraggable", [])
         scope.touchTimeout = 100;
 
     }])
-    .constant('DragPointerSensitivity', 5)
+    .constant('DragPointerSensitivity', 9)
     .directive('ngDrag', ['DragPointerSensitivity', '$rootScope', '$parse', '$document', '$window', 'ngDraggable', function (DragPointerSensitivity, $rootScope, $parse, $document, $window, ngDraggable) {
         return {
             restrict: 'A',
