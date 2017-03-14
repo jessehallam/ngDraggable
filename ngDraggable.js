@@ -33,6 +33,7 @@ angular.module("ngDraggable", [])
                 var _moveEvents = 'touchmove mousemove';
                 var _releaseEvents = 'touchend mouseup';
                 var _dragHandle;
+                var _dragging;
 
                 // to identify the element in order to prevent getting superflous events when a single element has both drag and drop directives on it.
                 var _myid = scope.$id;
@@ -208,6 +209,8 @@ angular.module("ngDraggable", [])
                             return;
                         }
 
+                        _dragging = true;
+
                         console.log('starting dragging', arguments);
                         _data = getDragData(scope);
                         element.addClass('dragging');
@@ -242,7 +245,7 @@ angular.module("ngDraggable", [])
                         return;
                     evt.preventDefault();
                     evt.stopPropagation();
-                    $rootScope.$broadcast('draggable:end', { x: _mx, y: _my, tx: _tx, ty: _ty, event: evt, element: element, data: _data, callback: onDragComplete, uid: _myid, dragType: getDragType() });
+                    if (_dragging) $rootScope.$broadcast('draggable:end', { x: _mx, y: _my, tx: _tx, ty: _ty, event: evt, element: element, data: _data, callback: onDragComplete, uid: _myid, dragType: getDragType() });
                     element.removeClass('dragging');
                     element.parent().find('.drag-enter').removeClass('drag-enter');
                     reset();
@@ -254,6 +257,8 @@ angular.module("ngDraggable", [])
                             onDragStopCallback(scope, { $data: _data, $event: evt });
                         });
                     }
+
+                    _dragging = false;
 
                     _deregisterRootMoveListener();
                 };
